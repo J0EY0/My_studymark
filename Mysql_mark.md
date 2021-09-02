@@ -782,7 +782,7 @@ delete是删除表里面的值 而不是表本身
 要删除整张表需要使用drop
 
 ```mysql
-DROP ``
+DROP Table ``
 ```
 
 而要删除整张表中的值
