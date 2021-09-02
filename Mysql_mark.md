@@ -627,15 +627,173 @@ CREATE TABLE `XXXX`(
 )ENGINE =MyISAM;
 ```
 
-**<u>！！注意！！</u>**
+##### **<u>！！注意！！</u>**
 
 不要在导入数据到一个新表时，使用FULLTEXT() 否则对性能有影响
 
 而是应该在数据导入完成后通过ALTER修改表的属性
 
+##### 进行全文本搜索
+
+使用MATCH() 以及Against()函数
+
+match指定搜索的列
+
+against指定搜索的表达式
+
+example:
+
+```mysql
+SELECT `note_text` FROM productnotes WHERE Match(`note_text`) Against('rabbit');
+```
+
+意为 从productnotes表中的note_text列搜索所有包含rabbit字段的结果
+
+###### 传递给Match()的值必须要跟FULLTEXT()定义的字段相同
+
+###### 除非以二进制的方式搜索 否则搜索不区分大小写
+
+##### 查询扩展
+
+```mysql
+SELECT `note_text` FROM productnotes WHERE Match(`note_text`) Against('rabbit' WITH QUERY EXPANSION);
+```
+
+##### 布尔文本搜索
+
+```mysql
+SELECT `note_text` FROM productnotes WHERE Match(`note_text`) Against('rabbit' IN BOOLEAN MODE);
+```
+
+以上语句没有使用布尔操作符 其结果跟没使用布尔操作符相同
+
+example：
+
+查询出有rabbit 但不包含rope的文本
+
+```mysql
+SELECT `note_text` FROM productnotes WHERE Match(`note_text`) Against('rabbit -rope*' IN BOOLEAN MODE); #mysql 4.x 使用此句会有问题 应该把*去掉
+```
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200924095936756.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80OTk4NDA0NA==,size_16,color_FFFFFF,t_70#pic_center)
+
+<u>在布尔方式中 不按等级值降序排序返回的行</u>
+
+使用说明：
+
+- 3个或3个字符一下的词被定义为短词 而短词一般会被忽略 当然阈值可以自己设置
+- Mysql 有一个内建非用词的列表 这些词在全文本索引时常常被忽略
+- 许多词出现的频率很高 Mysql规定出现概率大于50%的词 会被忽略
+- 如果表中的行数小于3 则全文本搜索不返回结果
+- 忽略语句中的单引号
+- 不具有词分隔符比如中文不能恰当的返回结果
+- 仅在MyISAM中支持全文本搜索 
+
+#### 插入数据
+
+##### INSERT (一般不会产生输出)
+
+```mysql
+INSERT INTO `表名` VALUES(`列名`,`列名`,`列名`,`列名`)
+```
+
+但是这种语法虽然简便 却不安全
+
+可以发现其高度依赖于表的结构顺序 如果当表的结构发生变化 就会出现问题
+
+使用以下更安全 但更加繁琐的方式插入数据
+
+```mysql
+INSERT INTO `表名` (`列名`,`列名`,`列名`,`列名`)VALUES(值,值,值,值)
+```
+
+##### 仔细给出值
+
+必须给出VALUES的正确数目 
+
+使用第二种语法还可以在表结构允许的情况下
+
+##### 提高整体性能
+
+```mysql
+数据库经常被多个用户访问
+INSERT操作可能非常耗时
+如果SELECT即查询功能最为重要 那么可以在INSERT INTO 之中加入LOW_PRIORITY
+指示mysql降低insert语句的优先级
+```
+
+##### 插入多个行
+
+```mysql
+INSERT INTO `表名` (`列名`,`列名`,`列名`,`列名`)VALUES(值,值,值,值),(值,值,值,值)
+```
+
+即单条INSERT语句有多组值 每组值用圆括号括起来用逗号分隔
+
+##### 使用单条INSERT语句插入多个行比使用多个INSERT可以提升INSERT的性能
+
+##### 插入检索数据
+
+```mysql
+INSERT INTO `表名` (`列名`,`列名`,`列名`,`列名`)  SELECT `列名`,`列名`,`列名`,`列名` FROM `表名`
+```
+
+##### 更新和删除数据
+
+为了更新(修改)表中的数据
+
+可以使用Update语句
+
+- 更新所有行
+- 更新指定行
+
+```mysql
+UPDATE `表名` 
+SET `列名`='xxxx'
+WHERE XXXX
+```
+
+这就是UPDATE使用的基本格式
+
+如果使用update更新多行时，如果不想使其中的一次update报错导致整个update语句失效可以使用IGNORE
+
+```mysql
+UPDATE IGNORE `表名`
+```
+
+在表结构允许的情况下 可以通过将列值置为NULL来删除值
 
 
 
+为了删除数据
 
+可以使用Delete语句
 
+而delete语句更加简单
 
+它直接删除一行
+
+```mysql
+DELETE FROM `表名`WHERE XXXX
+```
+
+delete是删除表里面的值 而不是表本身
+
+要删除整张表需要使用drop
+
+```mysql
+DROP ``
+```
+
+而要删除整张表中的值
+
+为了性能考虑 应该使用TRUNCATE函数
+
+它是在删除原来的表之后重新建一张新表
+
+- 除非打算更新或删除 否则不要使用 update或者delete 不携带where条件
+- 保证每个表都有主键
+- 应该先用SELECT测试
+- 使用强制实施引用完整性的数据库，则有mysql将不会允许删除与其他表有关联的行
+
+Mysql 没有undo，所以对待这两个语句需要谨慎
