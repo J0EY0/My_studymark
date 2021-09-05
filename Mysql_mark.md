@@ -763,8 +763,6 @@ UPDATE IGNORE `表名`
 
 在表结构允许的情况下 可以通过将列值置为NULL来删除值
 
-
-
 为了删除数据
 
 可以使用Delete语句
@@ -796,4 +794,346 @@ DROP Table ``
 - 应该先用SELECT测试
 - 使用强制实施引用完整性的数据库，则有mysql将不会允许删除与其他表有关联的行
 
-Mysql 没有undo，所以对待这两个语句需要谨慎
+Mysql 没有undo，所以对待这两个语句需要谨慎使用
+
+#### 创建和操纵表
+
+```mysql
+CREATE TABLE `表名`(
+)
+```
+
+#### NULL值
+
+null值就是没有值或者缺值
+
+```mysql
+#对于建表这一过程而言 尽量使用NOT NULL去约束
+#而不是NULL 尽管 NOT NULL对于NULL来说提升性能很小 但是可以避免一些意想不到的错误 
+
+```
+
+##### 理解NULL和空串的区别
+
+NULL是空值即没有值 而空串即`''`它在NOT NULL中是允许的
+
+##### 主键只允许使用不为NULL值的列
+
+
+
+##### AUTO_INCREMENT
+
+使用Mysql提供的auto_increment字段 可以实现自增类型
+
+但是有一缺点就是无法确定mysql生成的值
+
+可以使用last_insert_id() 函数获取这个值
+
+一张表只能拥有一个auto_increment
+
+```mysql
+SELECT last_insert_id() 
+```
+
+##### Default
+
+在创建表时 可以使用Default为字段赋予初值
+
+##### 引擎
+
+在创建表的过程中 我们可以通过
+
+```mysql
+CREATE TABLE `表名`(
+	xxx
+	xxx
+    xxx
+
+)ENGINE='';
+```
+
+来指定引擎
+
+不同的引擎有不同的有点和特性
+
+- InnoDB 是一个可靠的事务处理引擎 不支持全文本搜索
+- MEMORY等同于MyISAM 但是当数据存储在内存中而不是磁盘时 速度会特别快 常用于创建临时表
+- MyISAM 一个性能很高的搜索引擎 支持全文本搜索
+
+引擎可以混用
+
+<u>但是注意外键不能跨引擎</u>
+
+##### 更新表
+
+<u>ALTER</u>
+
+修改表名
+
+```mysql
+ALTER TABLE `` RENAME TO``;
+```
+
+修改表注释
+
+```mysql
+ALTER TABLE `` COMMENT;
+```
+
+修改字段类型和注释
+
+```mysql
+ALTER TBALE `` modify COLUMN `` xxx COMMENT '';
+```
+
+增加一个字段
+
+```mysql
+ALTER TBALE `` ADD `` xxx;
+```
+
+修改字段名字 需要指定类型等
+
+```mysql
+ALTER TABLE `` CHANGE `` ``xxx;
+```
+
+删除字段
+
+```mysql
+ALTER TABLE `` DROP ``;
+```
+
+在某个字段后增加字段
+
+```mysql
+ALTER TABLE `` ADD COLUMN `` xxx AFTER ``;
+```
+
+调整字段顺序
+
+```mysql
+ALTER TABLE `` CHANGE `旧字段名` `新字段名` xxx AFTER ``;
+```
+
+使用ALTER TABLE 时应该小心 数据被误删除
+
+##### 删除表
+
+```mysql
+DROP TABLE ``
+```
+
+重命名表
+
+```mysql
+RENAME TABLE `` TO ``
+```
+
+#### 使用视图
+
+<u>需要Mysql5以上</u>
+
+视图本身不包含数据 每次使用视图时必须处理查询执行时所需的任一个检索
+
+如果使用多个联结和过滤创建了复杂的视图或者嵌套了视图 性能会下降的很厉害
+
+##### 为什么要使用视图
+
+- 重用SQL语句
+- 简化复杂SQL操作
+- 使用表的组成部分而不是整个表
+- 保护数据
+- 更改数据格式和表示
+
+##### 使用规则
+
+- 与表一样 视图的名字必须唯一
+- 对于创建的视图没有数量限制
+- 视图可以嵌套
+- ORDER BY 可以用在视图中
+- 视图不能索引 也不能有相关联的触发器和默认值
+- 视图可以与表一起使用
+
+#####  创建视图
+
+``` mysql
+CREATE VIEW `viewname`
+```
+
+##### 查看视图
+
+```mysql
+SHOW CREATE VIEW `viewname`
+```
+
+删除视图
+
+```mysql
+DROP VIEW `viewname`
+```
+
+更新视图
+
+```mysql
+1. DROP VIEW `viewname` / CREATE VIEW `viewname`
+2. CREATE OR REPLACE VIEW `viewname`
+```
+
+##### example:
+
+```mysql
+CREATE VIEW `example` AS
+SELECT *FROM `xxx`,`xxx` 
+WHERE XXXX;
+```
+
+如果在视图查询中使用了另外的WHERE子句 那么两个子句会自动合并
+
+一般的 应该将视图应用于检索 而不是更新
+
+#### 存储过程
+
+使用以下语句来创建一个存储过程
+
+```mysql
+CREATE
+	[DEFINER={user|CURRENT_USER}]
+PROCEDURE `名字`([proc_parameter[,....]])
+	[characteristic ...] routine_body
+	
+proc_parameter:
+	[IN|OUT|INOUT] param_name type #输入、输出、输入输出
+	
+characteristic:
+	COMMENT 'string'
+	| LANGUAGE SQL
+	|[NOT] DETERMINISTIC
+	|{CONTAINS SQL | NO SQL| READS SQL DATA| MODIFIES SQL DATA}
+	|SQL SECUITY {DEFINER |INVOKER}
+
+routine_body:
+	Valid SQL routine statement
+[begin_label: BEGIN]
+	[statement_list]
+	...
+END [end_label]
+```
+
+如果使用MYSQL命令行进行存储 那么
+
+可以使用
+
+```mysql
+DELIMITER 符号
+```
+
+自定义语句结束的表示符号
+
+##### 删除
+
+```mysql
+DROP PROCEDURE `name`	
+```
+
+仅当存在时删除
+
+```mysql
+DROP PROCEDURE IF EXISTS
+```
+
+##### 变量名
+
+```mysql
+所有的mysql变量名必须由@开头
+由 DECLARE 创建
+```
+
+##### 调用
+
+使用以下语句调用
+
+```mysql
+CALL `函数名`
+```
+
+##### 注释
+
+在存储过程中有两种注释风格
+
+```mysql
+1. --
+2. // #语言风格 常用于多行注释
+```
+
+#### 游标
+
+游标只用于存储过程
+
+##### 创建游标
+
+```mysql
+在创建存储过程的时候 使用DELCARE 定义游标
+CREATE PROCEDURE `xx`(IN XXX INTEGER)
+BEGIN
+	XXXX
+	XXXX
+	XXXX
+    DECLARE `XXX` CURSOR
+    FOR 
+    SELCET xxxx
+END
+```
+
+##### 打开或者关闭游标
+
+使用以下语句打开游标
+
+```mysql
+OPEN `CURSOR`
+```
+
+使用以下语句关闭游标
+
+当然你也可以选择不关闭他 那么游标会在存储过程END语句后自动关闭
+
+```mysql
+CLOSE `CURSOR`
+```
+
+#####  使用游标 
+
+那么当一个游标被打开后 可以使用Fetch语句调用
+
+```mysql
+FETCH `游标` INTO xx
+```
+
+可以理解成一个指针 在读取数据 每读取一行就往下移动
+
+#### 触发器
+
+触发器是MYSQL响应
+
+- DELETE
+- UPDATE
+- INSERT
+
+这三个语句(或者任何位于BEGIN 和END之间)而自动执行的一条SQL语句
+
+它支持表 不支持视图或者临时表
+
+##### 创建触发器
+
+- 唯一的触发器名
+- 触发器关联的表
+- 触发器应该响应的活动
+- 触发器何时执行
+
+使用以下语句创建触发器
+
+```mysql
+CREATE TRIGGER `名`	BEFORE/ AFTER DELETE/ UPDATE/ INSERT xxx 
+```
+
+ 触发器中不支持CALL语句
