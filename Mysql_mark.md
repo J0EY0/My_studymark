@@ -1,5 +1,13 @@
 # Mysql
 
+参考来源：*Mysql Crush Course* by Ben Forta
+
+<u>**!!!注意!!! 本内容基于mysql5.0**</u>
+
+<u>**而最新版的mysql9.0 可能会有出入**</u>
+
+**比如就设置密码而言 由于mysql9引入了新的加密算法 可能会使以下内容的一些语句报错 请结合官方资料辩证的使用**
+
 ### SQL DB DBMS
 
 DB: DataBase 以文件的形式存在
@@ -1133,7 +1141,216 @@ FETCH `游标` INTO xx
 使用以下语句创建触发器
 
 ```mysql
-CREATE TRIGGER `名`	BEFORE/ AFTER DELETE/ UPDATE/ INSERT xxx 
+CREATE TRIGGER `名`	BEFORE/ AFTER DELETE/ UPDATE/ INSERT xxx ON `表名` FOR EACH ROW 语句
+```
+
+```mysql
+CREATE TRIGGER `名` BEFORE/ AFTER DELETE/ UPDATE/ INSERT xxx ON `表名` FOR EACH ROW 
+BEGIN 
+	XXX
+	XXX
+END
 ```
 
  触发器中不支持CALL语句
+
+##### <u>**！！！尽量少使用触发器 ！！！ 触发器还是比较消耗资源的**</u>
+
+##### 触发器是针对每一行的 对增删改查比较频繁的表切记不要使用触发器
+
+#### 事物处理
+
+用来维护数据库的完整性
+
+保证成批的SQL语句要么全部执行完毕 要么不执行
+
+[ACID](https://baike.baidu.com/item/acid/10738?fr=aladdin)
+
+- 事务   一组SQL语句
+- 回退   撤销指定SQL语句的过程
+- 提交   将未存储的SQL语句结果写入数据库表
+- 保存点   事物处理中的临时占位符
+
+##### 控制事物处理
+
+使用以下语句表示事务的开始
+
+```mysql
+START TRANSACTION
+```
+
+使用
+
+```mysql
+ROLLBACK
+```
+
+##### 回滚SQL
+
+ROLLBACK 只能在一个事物处理中应用
+
+```mysql
+ROLLBACK 不能用来回退 CREATE / DROP 
+当然也不能用来回退SELECT 虽然回退也毫无意义
+```
+
+##### 使用COMMIT
+
+在START TRANSACTION 最后使用COMMIT
+
+可以保证仅当SQL执行不报错的情况下 才会被提交
+
+```mysql
+START TRANSACTION
+	xxx
+	xxx
+COMMIT
+```
+
+##### 使用保留点
+
+```mysql
+SAVEPOINT `名`
+```
+
+确保保留点的名字是唯一的
+
+回滚到特定的保留点
+
+```mysql
+ROLLBACK TO `名`
+```
+
+保留点越多越好 更加灵活
+
+##### 释放保留点
+
+保留点在事务处理完成后自动释放
+
+Mysql5后 也可以使用 RELEASE SAVEPOINT明确释放保留点
+
+##### 更改默认的提交行为
+
+针对每个连接而不是服务器
+
+```mysql
+SET autocommit=0
+```
+
+#### 全球化和本地化
+
+##### 字符集和校对顺序
+
+- 字符集为字母和符号的集合
+- 编码为某个字符集成员的内部表示
+- 校对为规定字符如何比较的指令
+
+##### 查看所支持的字符集完整列表
+
+```mysql
+SHOW CHARACTER SET
+```
+
+##### 查看所支持校对的完整列表
+
+```mysql
+SHOW COLLATION
+```
+
+字符集很少是服务器甚至是数据库范围的设置 一般而言是表的设置
+不同的表根据需求支持不同的字符集
+
+##### 通过创建表设定字符集和校验顺序
+
+``` mysql
+CREATE TABLE `xxx`(
+	xxx xxx
+    xxx xxx
+) DEFAULT CHARACTER SET XXX
+  COLLATE xxxx;
+```
+
+#### 安全控制
+
+<u>**用户不能对过多的数据有过多的访问权**</u>
+
+- 多数用户只需要对表读和写 只有少数用户需要创建和删除表
+- 某些用户需要读表 但不需要更新表
+- 可能不需要用户有删除数据的权利
+- 某些用户需要处理用户账号的权限 但多数不需要
+- 让用户通过程序间接访问数据 而不是直接通过数据库访问
+- 根据用户登录的地点限制对某些功能的访问
+- <u>**不要使用Root！！！**</u>
+
+##### 管理用户
+
+MYSQL的账户信息存储在名为mysql的数据库中
+
+一般不要直接访问mysql数据库
+
+```mysql
+USE mysql;
+SELECT user FROM user;
+```
+
+##### 创建用户账号
+
+```mysql
+CREATE USER `` IDENTIFIED BY 'xxxxxx';
+```
+
+##### 删除用户账号
+
+```mysql
+DROP USER ''
+```
+
+##### 设置访问权限
+
+查看用户账号的访问权限
+
+```mysql
+SHOW GRANTS FOR xxx;
+```
+
+##### GRANT和REVOKE
+
+GRANT 用于赋予用户权限
+
+REVOKE用于撤销用户权限
+
+GRANT:
+
+* *使用通配符表示匹配所有
+
+```mysql
+GRANT SELECT / INSERT / UPDATE / DELETE / ALL ON `数据库名`.`表名` TO `用户名`@'%host'
+```
+
+但是通过此语句授权的用户无法给其他用户授权
+
+则使用
+
+```mysql
+GRANT PRIVILEGES ON databasename.tablename TO 'username'@'host' WITH GRANT OPTION;
+```
+
+![权限列表](https://img-blog.csdn.net/20160704174407759)
+
+设置好用户权限后使用
+
+```mysql
+flush privileges;
+```
+
+更改口令
+
+```mysql
+SET PASSWORD FOR `用户名`=Password()
+```
+
+
+
+#### 寻找更多？
+
+欢迎查看高性能mysql的学习笔记
