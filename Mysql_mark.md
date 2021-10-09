@@ -2,6 +2,8 @@
 
 参考来源：*Mysql Crush Course* by Ben Forta
 
+同时也会结合本科数据库系统概论的课程内容对*Mysql Crush Course* 没有提及到的内容进行补充
+
 <u>**!!!注意!!! 本内容基于mysql5.0**</u>
 
 <u>**而最新版的mysql9.0 可能会有出入**</u>
@@ -82,6 +84,10 @@ SHOW STATUS/ SHOW GRANTS / SHOW  ERRORS / SHOW WARNINGS
 ```
 
 分别为 显示服务器的状态信息 显示授权用户 显示服务器错误或警告信息
+
+## 查询
+
+###### -----SQL 99%的任务都在于查询 所以如何查询是非常重要的
 
 ### 简单查询 --SQL语句
 
@@ -286,6 +292,57 @@ SELECT `字段` FROM	`表名` WHERE RXGEXP "[123] Ton"
 ```mysql
 SELECT `字段` FROM `表名` WHERE RXGEXP "^字段$"
 ```
+
+##### EXISTS  
+
+当查询有返回行时 结果为True 否则 为False
+
+###### EXISTS 一般比IN要快
+
+也可以在EXISTS  前添加NOT 取反
+
+```mysql
+SELECT * FROM `表名` WHERE EXISTS
+							(
+                            	SELECT * FROM `表名` WHERE XXXX
+                            ) 
+```
+
+EXISTS 常用于在SQL中实现关系代数中的除法
+
+比如使用EXISTS 实现查询选修了全部课程的学生姓名
+
+参考 *数据库系统概论第五版*
+
+由于SQL中没有全称量词 所以需要对全称量词的表达式进行转换 将其转换为存在量词
+
+离散数学中的表示
+$$
+(\forall x) P \equiv \neg(\exists x(\neg P))
+$$
+所以使用两个NOT EXIST 表示选择全部
+
+```mysql
+SELECT Sname
+FROM Student
+WHERE NOT EXISTS
+			(SELECT * 
+             FROM Course
+             WHERE NOT EXISTS 
+             		(SELECT*
+                     FROM SC
+                     WHERE Sno=Student.Sno
+                     		AND Cno=Course.Cno
+                    ));
+```
+
+由NOT EXISTS 的性质可知
+
+假设现在有3门课 x,y,z,有学生A,B
+
+A选择了所有课 B没有
+
+那么通过最里层的查询可知 每次都能查到 那么最里面的NOT EXISTS 每次返回的都是False 则对于最外面的NOT EXISTS  每次都是空 即返回true 那么对于三门课 如果全选则从里到外的逻辑是 false、false、false  --> true、true、true--> 选择这名学生 否则就是只要有一门未选 都会导致最终的结果为false 即 select 不去选择这名学生
 
 
 
@@ -697,7 +754,7 @@ SELECT `note_text` FROM productnotes WHERE Match(`note_text`) Against('rabbit -r
 - 不具有词分隔符比如中文不能恰当的返回结果
 - 仅在MyISAM中支持全文本搜索 
 
-#### 插入数据
+## 插入和修改数据
 
 ##### INSERT (一般不会产生输出)
 
@@ -804,7 +861,7 @@ DROP Table ``
 
 Mysql 没有undo，所以对待这两个语句需要谨慎使用
 
-#### 创建和操纵表
+### 创建和操纵表
 
 ```mysql
 CREATE TABLE `表名`(
@@ -862,7 +919,7 @@ CREATE TABLE `表名`(
 
 来指定引擎
 
-不同的引擎有不同的有点和特性
+不同的引擎有不同的特点和特性
 
 - InnoDB 是一个可靠的事务处理引擎 不支持全文本搜索
 - MEMORY等同于MyISAM 但是当数据存储在内存中而不是磁盘时 速度会特别快 常用于创建临时表
@@ -937,6 +994,8 @@ DROP TABLE ``
 ```mysql
 RENAME TABLE `` TO ``
 ```
+
+### 高级用法
 
 #### 使用视图
 
@@ -1351,6 +1410,8 @@ SET PASSWORD FOR `用户名`=Password()
 
 
 
-#### 寻找更多？
+## 寻找更多？
 
 欢迎查看高性能mysql的学习笔记
+
+ 更新中 敬请期待
